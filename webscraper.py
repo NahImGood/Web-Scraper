@@ -1,8 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 
-
-
 def find_all(a_str, sub):
     start = 60000
     while True:
@@ -12,45 +10,51 @@ def find_all(a_str, sub):
         start += len(sub) # use start += 1 to find overlapping matches
 
 def get_title_url(html_string):
-    start_array = list(find_all(webpageData, 'Stories Index|Story Click|'))
-    # print(start_array)
+    text = html_string.text
+    start_array = list(find_all(text, 'Stories Index|Story Click|'))
     article_urls = []
     for start in start_array:
-      title_index = html_string.find("Stories Index|Story Click|", start)
-
+      title_index = text.find("Stories Index|Story Click|", start)
       # the index number for the CLOSING title string in the array
       start_index = title_index + len("Stories Index|Story Click|")
-
-      end_index = webpageData.find('"',title_index)
-
-      URLStartIndex = webpageData.find('href="',start_index)
+      end_index = text.find('"',title_index)
+      URLStartIndex = text.find('href="',start_index)
       URLStartIndex = URLStartIndex + 6
-      URLEndIndex = webpageData.find('"',URLStartIndex)
-      URL = webpageData[URLStartIndex:URLEndIndex]
+      URLEndIndex = text.find('"',URLStartIndex)
+      URL = text[URLStartIndex:URLEndIndex]
       # Now holding a list of URLS
       article_urls.append(URL)
     return article_urls;
 
 def get_article_info(article_urls):
-
+    articles = []
     for url in article_urls:
-        articles = []
-        baseURL = Request('https://www.worldwildlife.org' + url, headers={'User-Agent': 'Mozilla/5.0'})
-        page = requests.get(baseURL)
+        article = []
+        baseURL = 'https://www.worldwildlife.org' + url
+        #baseURL = "https://www.worldwildlife.org/stories/seed-dispersing-drones-help-rebuild-koala-populations-devastated-by-bushfires"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        page = requests.get(baseURL, headers=headers)
         soup = BeautifulSoup(page.content, 'html.parser')
         #  span12 is the class before all the article information
-        article_data = webpage.decode("utf-8")
-        " ".join(article_data.split())
-        # Holds the content container
         results = soup.find(id='content')
-        print(results.prettify())
+        # Holds the content container
+        title_elem = results.find_all('h1', "hdr-page")
+        sub_title_elem = results.find_all('h2', 'hdr-page')
+        article_content = results.find_all('div', 'span12')
+        if not sub_title_elem:
+            continue
+        if not article_content:
+            continue
+        article = {'title': title_elem, 'subtitle': sub_title_elem,'body': article_content}
+        articles.append(article.copy())
+    print(articles)
 
 
-req = Request('https://www.worldwildlife.org/stories', headers={'User-Agent': 'Mozilla/5.0'})
+
+url = 'https://www.worldwildlife.org/stories'
+headers = {'User-Agent': 'Mozilla/5.0'}
 # Opens the url and reads it
-page = requests.get(req)
-# Holds the data from the url request
-webpageData = page.decode("utf-8")
+webpageData = requests.get(url, headers=headers)
 # Calls URL For Article Info
 article_urls = get_title_url(webpageData)
 get_article_info(article_urls)
